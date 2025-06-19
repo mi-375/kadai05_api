@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+
+<div class="tripdiary">
+    <img src="img/top3.png" alt="くまこの旅行記タイトル" class="imgtrip"> 
+</div>
+
+<div class="mapg">
+<!-- メモ風の二本線 -->
+
+<div class="main-container">
+<div id="diary-list" style="display: none;"></div>
+<div id="diary-detail" style="display: none;"></div>
+
+<div class="topbutton">
+    <button type="menu">新規作成</button>
+    <button type="menu">日記一覧</button>
+    <button type="menu">所要時間</button>
+    <!-- <button type="menu">お気に入り</button>     -->
+
+</div>
+
+<div class="double-line-deco">
+</div>
+
+<div class="form">
+        <img src="img/hikouki.png" alt="飛行機の写真" class="imghikouki">
+
+
+    <div class="form-top">
+        <div class="form-block">
+            <div class="formtitle"><label for="hiduke">日付</label></div>
+            <input type="date" name="hiduke" class="formcontent-hiduke">    
+        </div>
+
+        <div class="form-block">
+            <div class="formtitle"><label for="spot">行き先</label></div>
+            <input type="text" name="spot" class="formcontent-spot">    
+        </div>
+    </div>
+
+    <div class="formtitle"><label for="kanso">感想</label></div>
+    <textarea name="kanso" class="formcontent-kanso" rows="4"></textarea>
+
+    <div class="form-memo-photo-schedule">
+        
+        <div class="form-left">
+
+            <div class="memo">
+                <div class="formtitle"><label for="memo">メモ</label></div>
+                <textarea name="memo" class="formcontent-memo" rows="4"></textarea>
+            </div>
+            <img src="img/car2.png" alt="車の写真" class="imgcar">
+
+            <div class="photo">
+                <div class="formtitle"><label for="photoInput">画像</label></div>
+              
+                <label class="custom-file-upload">
+                  <input type="file" id="photoInput" accept="image/*" />
+                  画像を選ぶ
+                </label>
+                <img id="previewImage" class="preview-img" />
+
+              </div>
+              
+        </div>
+
+        <div class="form-right">
+
+            <div class="formtitle"><label for="schedule">スケジュール</label></div>
+            
+            <div class="schedule">
+
+            <div class="schedule-row">
+                <input type="time">
+                <input type="text" name="schedule1" class="formcontent-schedule1">
+            </div>
+            <div class="schedule-row">
+                <input type="time" >
+                <input type="text" name="schedule2" class="formcontent-schedule2">
+            </div>
+            <div class="schedule-row">
+                <input type="time" name="schedule3" class="formcontent-schedule3">
+                <input type="text" name="schedule3" class="formcontent-schedule3">
+            </div>
+            <div class="schedule-row">
+                <input type="time" name="schedule4" class="formcontent-schedule4">
+                <input type="text" name="schedule4" class="formcontent-schedule4">
+            </div>
+            <div class="schedule-row">
+                <input type="time" name="schedule5" class="formcontent-schedule5">
+                <input type="text" name="schedule5" class="formcontent-schedule5">
+            </div>
+            <div class="schedule-row">
+                <input type="time" name="schedule6" class="formcontent-schedule6">
+                <input type="text" name="schedule6" class="formcontent-schedule6">
+            </div>
+
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- 旅程を立てるページの内容 -->
+<div id="route-form" style="display: none;">
+<!-- 最初は非表示の状態にしておく -->
+  <div id="route-map" class="route-map">
+  </div>
+
+  <div class="mapbox">
+    <div class="mapset">
+  <label for="origin" class="maptext">出発地</label><br>
+  <input id="origin" type="text" class="kensaku" placeholder=""><br><br>
+</div>
+
+  <div class="mapbox">
+  <label for="destination" class="maptext">到着地</label><br>
+  <input id="destination" type="text" class="kensaku" placeholder=""><br><br>
+</div>
+</div>
+  <button id="searchRouteBtn" class="searchRouteBtn" >ルート検索</button>
+
+  <div id="directions-panel" style="margin-top:20px;"></div>
+
+
+</div>
+
+<button type="submit">
+    保存
+</button>
+<div id="commentList"></div>
+<div>
+</div>
+
+</div>
+
+</div>
+
+<!-- 地図アプリAPI読み込み・ -->
+<script src="https://maps.googleapis.com/maps/api/js?key=&libraries=places">
+
+
+
+
+
+
+
+
+// APIキーは非表示！！！
+
+
+
+
+
+
+
+
+</script>
+
+<script>
+let map, marker, geocoder;
+
+
+
+let routeMap, directionsService, directionsRenderer;
+
+document.getElementById("searchRouteBtn").addEventListener("click", () => {
+  const origin = document.getElementById("origin").value;
+  const destination = document.getElementById("destination").value;
+
+  if (!origin || !destination) {
+    alert("出発地と到着地を入力してください");
+    return;
+  }
+
+  // 地図の初期化（初回のみ）
+  if (!routeMap) {
+    routeMap = new google.maps.Map(document.getElementById("route-map"), {
+      center: { lat: 35.6812, lng: 139.7671 },
+      zoom: 7,
+    });
+    directionsService = new google.maps.DirectionsService();
+    directionsRenderer = new google.maps.DirectionsRenderer();
+    directionsRenderer.setMap(routeMap);
+    directionsRenderer.setPanel(document.getElementById("directions-panel"));
+  }
+
+  // 経路検索
+  directionsService.route(
+    {
+      origin: origin,
+      destination: destination,
+      travelMode: google.maps.TravelMode.DRIVING, // 他に "WALKING", "TRANSIT" なども可
+    },
+    (result, status) => {
+      if (status === "OK") {
+        directionsRenderer.setDirections(result);
+
+        // 所要時間の抽出
+        const duration = result.routes[0].legs[0].duration.text;
+        document.getElementById("directions-panel").insertAdjacentHTML(
+          "beforeend",
+          `<p><strong>所要時間:</strong> ${duration}</p>`
+        );
+      } else {
+        alert("ルートの取得に失敗しました: " + status);
+      }
+    }
+  );
+});
+
+// 読み込み後に地図を初期化
+window.addEventListener("load", initMap);
+
+
+
+
+
+
+
+
+
+
+
+
+
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+    let diaryList = [];
+    let selectedImage = "";
+
+document.getElementById('photoInput').addEventListener('change', function () {
+  const file = this.files[0];
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    document.getElementById('previewImage').src = e.target.result;
+    selectedImage = e.target.result; // Base64文字列を保存
+  };
+  if (file) {
+    reader.readAsDataURL(file);
+  }
+});
+
+
+    //  保存処理
+    document.querySelector('button[type="submit"]').addEventListener('click', () => {
+  const date = document.querySelector('input[name="hiduke"]').value;
+  const spot = document.querySelector('input[name="spot"]').value;
+  const kanso = document.querySelector('textarea[name="kanso"]').value;
+  const memo = document.querySelector('textarea[name="memo"]').value;
+
+
+  // スケジュールの取得
+  const scheduleRows = document.querySelectorAll('.schedule-row');
+  const schedule = [];
+  scheduleRows.forEach(row => {
+    const time = row.querySelector('input[type="time"]').value;
+    const text = row.querySelector('input[type="text"]').value;
+    if (time || text) {
+      schedule.push({ time, text });
+    }
+  });
+
+  if (!date || !spot) {
+    alert("日付と行き先を入力してね！");
+    return;
+  }
+
+  const diary = {
+    id: Date.now(),
+    date,
+    spot,
+    kanso,
+    memo,
+    schedule,
+    image: selectedImage,
+  };
+
+    // ローカルストレージに保存
+    let diaries = JSON.parse(localStorage.getItem("diaryList")) || [];
+    diaryList.push(diary);
+  localStorage.setItem("diaryList", JSON.stringify(diaryList));
+ alert("保存しました！");
+  clearForm();
+
+  showDiaries(); // 表示更新
+
+
+  selectedImage = "";
+document.getElementById('photoInput').value = ""; // input自体をクリア
+document.getElementById('previewImage').src = ""; // プレビューも非表示に
+
+});
+
+    // 初期読み込み
+    window.addEventListener('load', () => {
+      const stored = localStorage.getItem("diaryList");
+      if (stored) {
+        diaryList = JSON.parse(stored);
+      }
+    });
+  
+    // 日記一覧表示
+    document.querySelectorAll('button[type="menu"]')[1].addEventListener('click', () => {
+      const listDiv = document.getElementById('diary-list');
+      // listDiv.innerHTML = `<h2 style="color: #9f6700;">日記一覧</h2>`;
+  
+diaryList.forEach(diary => {
+  const entry = document.createElement('div');
+  entry.style.display = "flex";
+  entry.style.justifyContent = "space-between";
+  entry.style.alignItems = "center";
+  entry.style.marginBottom = "10px";
+  entry.style.borderBottom = "1px solid #ccc";
+  entry.style.padding = "5px 0";
+
+  const info = document.createElement('span');
+  info.textContent = `${diary.date} - ${diary.spot}`;
+  info.style.cursor = "pointer";
+  info.style.color = "#9f6700";
+  info.addEventListener('click', () => showDiary(diary.id));
+
+  const deleteBtn = document.createElement('button');
+  deleteBtn.textContent = "削除";
+  deleteBtn.style.background = "#c0392b";
+  deleteBtn.style.color = "white";
+  deleteBtn.style.border = "none";
+  deleteBtn.style.borderRadius = "5px";
+  deleteBtn.style.padding = "5px 10px";
+  deleteBtn.style.cursor = "pointer";
+  deleteBtn.addEventListener('click', (e) => {
+    e.stopPropagation(); // 詳細表示を防ぐ
+    deleteDiary(diary.id);
+  });
+
+  entry.appendChild(info);
+  entry.appendChild(deleteBtn);
+  listDiv.appendChild(entry);
+
+  document.querySelector('.form').style.display = "none";
+  document.getElementById('diary-detail').style.display = "none";
+  document.getElementById('route-form').style.display = "none"; // 所要時間ページを非表示
+
+
+
+});
+  
+      listDiv.style.display = "block";
+      document.querySelector('.form').style.display = "none";
+      document.getElementById('diary-detail').style.display = "none";
+    });
+  
+    // 日記詳細表示
+    function showDiary(id) {
+  const diary = diaryList.find(d => d.id === id);
+  const detailDiv = document.getElementById('diary-detail');
+
+  detailDiv.innerHTML = `
+    <div style="color: #9f6700;">
+      <h2>${diary.date} - ${diary.spot}</h2>
+      <p><strong>感想:</strong> ${diary.kanso}</p>
+      <p><strong>メモ:</strong> ${diary.memo}</p>
+      <p><strong>スケジュール:</strong></p>
+      <ul>
+        ${diary.schedule.map(s => `<li>${s.time} - ${s.text}</li>`).join("")}
+      </ul>
+      
+      ${
+        diary.image
+          ? `<p><strong>写真:</strong><br><img src="${diary.image}" style="max-width: 300px; border: 1px solid #ccc;" /></p>`
+          : ''
+      }
+
+      <div id="comment-section">
+        <h4>コメント</h4>
+        <div id="comments-list"></div>
+        <textarea id="comment-input" rows="2" style="width:100%;"></textarea>
+        <button id="submit-comment" class=submit-content>コメントを送信</button>
+        
+
+      </div>
+
+
+      <button class="button-style" onclick="backToList()">戻る</button>
+    </div>
+  `;
+  detailDiv.style.display = "block";
+  document.getElementById('diary-list').style.display = "none";
+
+
+
+  // 送信イベント登録
+  document.getElementById('submit-comment').addEventListener('click', () => {
+  const text = document.getElementById('comment-input').value.trim();
+  if (text) {
+    postComment(id, text);
+    document.getElementById('comment-input').value = "";
+  }
+});
+
+    const commentInput = document.getElementById('comment-input');
+    commentInput.style.width = "100%";
+    commentInput.style.border = "2px solid #9f6700";
+    commentInput.style.borderRadius = "5px";
+    commentInput.style.padding = "8px";
+    commentInput.style.color = "#9f6700";
+    commentInput.style.fontSize = "14px";
+    commentInput.style.backgroundColor = "#fffaf0";
+    commentInput.style.boxSizing = "border-box";
+    commentInput.style.backgroundColor = "white";
+
+ 
+
+loadComments(id);
+// console.log("loadComments開始", diaryId);
+
+// コメント読み込み表示
+
+}
+
+  
+    // 一覧に戻る
+    function backToList() {
+      document.getElementById('diary-detail').style.display = "none";
+      document.getElementById('diary-list').style.display = "block";
+    }
+  
+    // 新規作成ボタン（最初の画面に戻す）
+    document.querySelectorAll('button[type="menu"]')[0].addEventListener('click', () => {
+      clearForm();
+      document.querySelector('.form').style.display = "block";
+      document.getElementById('diary-list').style.display = "none";
+      document.getElementById('diary-detail').style.display = "none";
+        // 所要時間ページを非表示に
+      document.getElementById('route-form').style.display = "none";
+      document.querySelector('button[type="submit"]').style.display = "inline-block"; // 保存ボタン復活
+
+    });
+  
+    // フォームの初期化
+    function clearForm() {
+      document.querySelector('input[name="hiduke"]').value = "";
+      document.querySelector('input[name="spot"]').value = "";
+      document.querySelector('textarea[name="kanso"]').value = "";
+      document.querySelector('textarea[name="memo"]').value = "";
+    }
+
+    document.querySelectorAll('button[type="menu"]')[2].addEventListener('click', () => {
+  document.getElementById('route-form').style.display = "block";
+  document.querySelector('.form').style.display = "none";
+  document.getElementById('diary-list').style.display = "none";
+  document.getElementById('diary-detail').style.display = "none";
+  document.querySelector('button[type="submit"]').style.display = "none";
+
+});
+
+    
+    function deleteDiary(id) {
+  if (!confirm("この日記を削除しますか？")) {
+    return; // キャンセルされたら処理しない
+  }
+
+  // diaryListから該当IDの日記を除外
+  diaryList = diaryList.filter(diary => diary.id !== id);
+  // localStorageにも保存し直す
+  localStorage.setItem("diaryList", JSON.stringify(diaryList));
+  // 一覧を再表示
+  document.querySelectorAll('button[type="menu"]')[1].click();
+}
+
+
+  </script>
+
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+        import { getDatabase, ref, push, set, onChildAdded, remove, onChildRemoved }
+            from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+
+
+
+
+
+
+// ここは非表示にする！！！！
+
+
+
+
+
+};
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app); //RealtimeDBに接続
+        const dbRef = ref(db, "chat"); //RealtimeDB内の"chat"を使う
+
+        // コメントを投稿
+        window.postComment = function(diaryId, text) {
+  const commentRef = ref(db, `comments/${diaryId}`);
+  const newCommentRef = push(commentRef);
+  set(newCommentRef, {
+    text,
+    createdAt: Date.now()
+  });
+};
+
+  // コメントを読み込み・表示
+  window.loadComments = function(diaryId) {
+  const commentRef = ref(db, `comments/${diaryId}`);
+  const commentList = document.getElementById('comments-list');
+  commentList.innerHTML = "";
+
+  onChildAdded(commentRef, (data) => {
+    const comment = data.val();
+    const key = data.key;
+
+    // コメント要素を作成
+    const p = document.createElement('div');
+    p.className = "comment-block";
+    p.dataset.key = key;
+
+    const date = new Date(comment.createdAt).toLocaleString();
+    const textSpan = document.createElement('span');
+    textSpan.textContent = `🐻 ${date}: ${comment.text}`;
+
+    // 編集ボタン
+    const editBtn = document.createElement('button');
+    editBtn.textContent = "編集";
+    editBtn.style.marginLeft = "10px";
+    editBtn.style.marginBottom = "5px";
+    editBtn.style.backgroundColor = "#2980b9";
+    editBtn.style.color = "white";
+    editBtn.style.border = "none";
+    editBtn.style.padding = "2px 8px";
+    editBtn.style.borderRadius = "3px";
+    editBtn.style.cursor = "pointer";
+
+    // 削除ボタン
+    const deleteBtn = document.createElement('button');
+    deleteBtn.textContent = "削除";
+    deleteBtn.style.marginLeft = "5px";
+    deleteBtn.style.marginBottom = "5px";
+    deleteBtn.style.backgroundColor = "#c0392b";
+    deleteBtn.style.color = "white";
+    deleteBtn.style.border = "none";
+    deleteBtn.style.padding = "2px 8px";
+    deleteBtn.style.borderRadius = "3px";
+    deleteBtn.style.cursor = "pointer";
+
+    // 編集イベント
+    editBtn.addEventListener('click', () => {
+
+      document.getElementById('comment-input').style.display = "none";
+      document.getElementById('submit-comment').style.display = "none";
+
+
+      // 入力欄を作成
+      const textarea = document.createElement('textarea');
+      textarea.value = comment.text;
+      textarea.rows = 2;
+      textarea.style.width = "100%";    
+      textarea.style.border = "2px solid #9f6700" ;    
+      textarea.style.color = "#9f6700";     
+      textarea.style.borderRadius = "5px";   
+      textarea.style.fontSize = "14px";
+
+
+      const saveBtn = document.createElement('button');
+      saveBtn.textContent = "保存";
+      saveBtn.style.margin = "0px 0px 5px 0px";
+      saveBtn.style.backgroundColor = "#27ae60";
+      saveBtn.style.color = "white";
+      saveBtn.style.border = "none";
+      saveBtn.style.padding = "8px 16px";
+      saveBtn.style.borderRadius = "5px";
+      saveBtn.style.cursor = "pointer";
+      saveBtn.style.fontSize = "14px";
+
+      // 要素置き換え
+      p.innerHTML = "";
+      p.appendChild(textarea);
+      p.appendChild(saveBtn);
+
+      // 保存処理
+      saveBtn.addEventListener('click', () => {
+        const newText = textarea.value.trim();
+        if (newText) {
+          const updateRef = ref(db, `comments/${diaryId}/${key}`);
+          set(updateRef, {
+            text: newText,
+            createdAt: Date.now() // 日付も更新
+          });
+          // 投稿欄を再表示
+          document.getElementById('comment-input').style.display = "block";
+          document.getElementById('submit-comment').style.display = "inline-block";
+
+
+
+    }
+  });
+
+    });
+
+
+    function initMap() {
+  const defaultCenter = { lat: 35.6812, lng: 139.7671 }; // 東京駅を初期表示
+
+  map = new google.maps.Map(document.getElementById("map"), {
+    center: defaultCenter,
+    zoom: 13,
+  });
+
+  geocoder = new google.maps.Geocoder();
+
+  // 地図クリックでピンを立てる
+  map.addListener("click", (e) => {
+    const latLng = e.latLng;
+
+    if (marker) marker.setMap(null);
+
+    marker = new google.maps.Marker({
+      position: latLng,
+      map: map,
+    });
+
+    geocoder.geocode({ location: latLng }, (results, status) => {
+      if (status === "OK" && results[0]) {
+        const address = results[0].formatted_address;
+        document.querySelector('input[name="spot"]').value = address;
+      }
+    });
+  });
+
+
+
+  // const input = document.getElementById("autocomplete");
+  const autocomplete = new google.maps.places.Autocomplete(input);
+  autocomplete.bindTo("bounds", map);
+
+  autocomplete.addListener("place_changed", () => {
+    const place = autocomplete.getPlace();
+    if (!place.geometry) return;
+
+    map.setCenter(place.geometry.location);
+    map.setZoom(15);
+
+    if (marker) marker.setMap(null);
+    marker = new google.maps.Marker({
+      position: place.geometry.location,
+      map: map,
+    });
+
+    document.querySelector('input[name="spot"]').value = place.formatted_address || place.name;
+  });
+
+}
+
+// 読み込み後に地図を初期化
+window.addEventListener("load", initMap);
+
+
+
+    
+
+    // 削除イベント
+    deleteBtn.addEventListener('click', () => {
+      if (confirm("このコメントを削除しますか？")) {
+        const delRef = ref(db, `comments/${diaryId}/${key}`);
+        remove(delRef);
+      }
+    });
+
+    p.appendChild(textSpan);
+    p.appendChild(editBtn);
+    p.appendChild(deleteBtn);
+    commentList.appendChild(p);
+  });
+
+  // コメント削除時に画面からも削除
+  onChildRemoved(commentRef, (data) => {
+    const removedKey = data.key;
+    const target = document.querySelector(`.comment-block[data-key="${removedKey}"]`);
+    if (target) {
+      target.remove();
+    }
+  });
+};
+
+
+window.initMap = initMap;
+
+    </script>
+
+
+<!-- Google Map初期化用の関数は type="module" の外に置く -->
+<script>
+  function initRouteMap() {
+    routeMap = new google.maps.Map(document.getElementById("route-map"), {
+      center: { lat: 35.6812, lng: 139.7671 }, // 東京駅
+      zoom: 7,
+    });
+  
+    directionsService = new google.maps.DirectionsService();
+    directionsRenderer = new google.maps.DirectionsRenderer();
+    directionsRenderer.setMap(routeMap);
+    directionsRenderer.setPanel(document.getElementById("directions-panel"));
+  
+    let mode = "origin";
+    let originMarker = null;
+    let destinationMarker = null;
+  
+    routeMap.addListener("click", (e) => {
+      const latLng = e.latLng;
+  
+      if (mode === "origin") {
+        if (originMarker) originMarker.setMap(null);
+        originMarker = new google.maps.Marker({ position: latLng, map: routeMap, label: "出" });
+        document.getElementById("origin").value = `${latLng.lat()},${latLng.lng()}`;
+        mode = "destination";
+      } else {
+        if (destinationMarker) destinationMarker.setMap(null);
+        destinationMarker = new google.maps.Marker({ position: latLng, map: routeMap, label: "着" });
+        document.getElementById("destination").value = `${latLng.lat()},${latLng.lng()}`;
+        mode = "origin";
+      }
+    });
+  }
+  
+  // ページ読み込み時に地図を初期化
+  window.addEventListener("load", () => {
+    initRouteMap();
+  });
+  </script>
+
+
+</body>
+</html>
