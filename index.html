@@ -166,84 +166,6 @@
 
 </script>
 
-<script>
-let map, marker, geocoder;
-
-
-
-let routeMap, directionsService, directionsRenderer;
-
-document.getElementById("searchRouteBtn").addEventListener("click", () => {
-  const origin = document.getElementById("origin").value;
-  const destination = document.getElementById("destination").value;
-
-  if (!origin || !destination) {
-    alert("出発地と到着地を入力してください");
-    return;
-  }
-
-  // 地図の初期化（初回のみ）
-  if (!routeMap) {
-    routeMap = new google.maps.Map(document.getElementById("route-map"), {
-      center: { lat: 35.6812, lng: 139.7671 },
-      zoom: 7,
-    });
-    directionsService = new google.maps.DirectionsService();
-    directionsRenderer = new google.maps.DirectionsRenderer();
-    directionsRenderer.setMap(routeMap);
-    directionsRenderer.setPanel(document.getElementById("directions-panel"));
-  }
-
-  // 経路検索
-  directionsService.route(
-    {
-      origin: origin,
-      destination: destination,
-      travelMode: google.maps.TravelMode.DRIVING, // 他に "WALKING", "TRANSIT" なども可
-    },
-    (result, status) => {
-      if (status === "OK") {
-        directionsRenderer.setDirections(result);
-
-        // 所要時間の抽出
-        const duration = result.routes[0].legs[0].duration.text;
-        document.getElementById("directions-panel").insertAdjacentHTML(
-          "beforeend",
-          `<p><strong>所要時間:</strong> ${duration}</p>`
-        );
-      } else {
-        alert("ルートの取得に失敗しました: " + status);
-      }
-    }
-  );
-});
-
-// 読み込み後に地図を初期化
-window.addEventListener("load", initMap);
-
-
-
-
-
-
-
-
-
-
-
-
-
-</script>
-
-
-
-
-
-
-
-
-
-
 
 
 <script>
@@ -626,66 +548,6 @@ loadComments(id);
   });
 
     });
-
-
-    function initMap() {
-  const defaultCenter = { lat: 35.6812, lng: 139.7671 }; // 東京駅を初期表示
-
-  map = new google.maps.Map(document.getElementById("map"), {
-    center: defaultCenter,
-    zoom: 13,
-  });
-
-  geocoder = new google.maps.Geocoder();
-
-  // 地図クリックでピンを立てる
-  map.addListener("click", (e) => {
-    const latLng = e.latLng;
-
-    if (marker) marker.setMap(null);
-
-    marker = new google.maps.Marker({
-      position: latLng,
-      map: map,
-    });
-
-    geocoder.geocode({ location: latLng }, (results, status) => {
-      if (status === "OK" && results[0]) {
-        const address = results[0].formatted_address;
-        document.querySelector('input[name="spot"]').value = address;
-      }
-    });
-  });
-
-
-
-  // const input = document.getElementById("autocomplete");
-  const autocomplete = new google.maps.places.Autocomplete(input);
-  autocomplete.bindTo("bounds", map);
-
-  autocomplete.addListener("place_changed", () => {
-    const place = autocomplete.getPlace();
-    if (!place.geometry) return;
-
-    map.setCenter(place.geometry.location);
-    map.setZoom(15);
-
-    if (marker) marker.setMap(null);
-    marker = new google.maps.Marker({
-      position: place.geometry.location,
-      map: map,
-    });
-
-    document.querySelector('input[name="spot"]').value = place.formatted_address || place.name;
-  });
-
-}
-
-// 読み込み後に地図を初期化
-window.addEventListener("load", initMap);
-
-
-
     
 
     // 削除イベント
@@ -718,12 +580,16 @@ window.initMap = initMap;
     </script>
 
 
+
+
+
+
 <!-- Google Map初期化用の関数は type="module" の外に置く -->
 <script>
   function initRouteMap() {
     routeMap = new google.maps.Map(document.getElementById("route-map"), {
-      center: { lat: 35.6812, lng: 139.7671 }, // 東京駅
-      zoom: 7,
+      center: {  lat: 35.6895, lng: 139.6917 },
+      zoom: 12,
     });
   
     directionsService = new google.maps.DirectionsService();
@@ -750,7 +616,41 @@ window.initMap = initMap;
         mode = "origin";
       }
     });
+
+
+    document.getElementById("searchRouteBtn").addEventListener("click", () => {
+    const origin = document.getElementById("origin").value;
+    const destination = document.getElementById("destination").value;
+
+    if (!origin || !destination) {
+      alert("出発地と到着地を入力してください");
+      return;
+    }
+
+    directionsService.route(
+      {
+        origin: origin,
+        destination: destination,
+        travelMode: google.maps.TravelMode.WALKING,
+      },
+      (result, status) => {
+        if (status === "OK") {
+          directionsRenderer.setDirections(result);
+
+          const duration = result.routes[0].legs[0].duration.text;
+          document.getElementById("directions-panel").insertAdjacentHTML(
+            "beforeend",
+            `<p><strong>所要時間:</strong> ${duration}</p>`
+          );
+        } else {
+          alert("ルートの取得に失敗しました: " + status);
+        }
+      }
+    );
+  });
+
   }
+
   
   // ページ読み込み時に地図を初期化
   window.addEventListener("load", () => {
